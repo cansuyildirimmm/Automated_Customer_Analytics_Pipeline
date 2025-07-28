@@ -1,0 +1,6 @@
+# requirements.txt
+psycopg2-binary
+pandas
+scikit-learn
+matplotlib
+seaborn

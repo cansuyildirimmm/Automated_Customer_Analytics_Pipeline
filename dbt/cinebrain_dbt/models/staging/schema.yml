@@ -1,0 +1,120 @@
+version: 2
+
+# =================================================================
+# 1. KAYNAKLAR (SOURCES)
+# Ham verinin PostgreSQL'deki yerini dbt'ye tanıtırız.
+# =================================================================
+sources:
+  - name: public
+    description: "PostgreSQL veritabanındaki ham CSV verileri."
+    tables:
+      - name: movies
+      - name: users
+      - name: genres
+      - name: movie_genres
+      - name: user_ratings
+      # AI modelinin üreteceği ham öneri tablosunu da şimdiden tanımlayalım.
+      - name: ai_recommendations
+
+# =================================================================
+# 2. MODELLER (MODELS)
+# dbt ile oluşturduğumuz tüm tabloları burada belgeler ve test ederiz.
+# =================================================================
+models:
+  # --- KATMAN 1: STAGING MODELLERİ ---
+  # Ham verinin temizlenmiş, yeniden adlandırılmış ve temel testlerden geçmiş ilk hali.
+  - name: stg_genres
+    columns:
+      - name: genre_id
+        tests: [unique, not_null]
+
+  - name: stg_movie_genres
+
+  - name: stg_movies
+    columns:
+      - name: movie_id
+        tests: [unique, not_null]
+
+  - name: stg_user_ratings
+    columns:
+      - name: user_id
+        tests:
+          - relationships:
+              to: ref('stg_users')
+              field: user_id
+      - name: movie_id
+        tests:
+          - relationships:
+              to: ref('stg_movies')
+              field: movie_id
+
+  - name: stg_users
+    columns:
+      - name: user_id
+        tests: [unique, not_null]
+
+  # --- KATMAN 2: CORE DWH MODELLERİ (Temel Yapı Taşları) ---
+  # İşin kurallarını ve ana birleştirmeleri içeren temel tablolar.
+  - name: dim_movies
+    description: "Her filmin detaylarını ve türlerini bir dizi (array) olarak içeren ana boyut tablosu."
+    columns:
+      - name: movie_id
+        description: "Filmin benzersiz anahtarı."
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_ratings
+    description: "Her bir puanlama olayını içeren merkezi olay (fact) tablosu. Tüm metriklerin temelidir."
+    columns:
+      - name: rating_id
+        description: "Her bir puanlama olayının benzersiz anahtarı (surrogate key)."
+        tests:
+          
+          - not_null
+      - name: user_id
+        tests:
+          - not_null
+          # Bu test, fct_ratings'teki her user_id'nin stg_users'da gerçekten var olduğunu garantiler.
+          - relationships:
+              to: ref('stg_users')
+              field: user_id
+      - name: movie_id
+        tests:
+          - not_null
+          # Bu test, fct_ratings'teki her movie_id'nin dim_movies'de gerçekten var olduğunu garantiler.
+          - relationships:
+              to: ref('dim_movies')
+              field: movie_id
+
+  # --- KATMAN 3: DATA MART MODELLERİ (Analize Hazır Tablolar) ---
+  # Belirli iş sorularına doğrudan cevap veren, son kullanıcıya özel tablolar.
+  - name: mart_movie_performance
+    description: "Her film için önceden hesaplanmış performans metrikleri. 'En iyi filmlerimiz hangileri?' gibi sorulara cevap verir."
+    columns:
+      - name: movie_id
+        tests:
+          # - unique
+          - not_null
+      - name: average_rating
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 5
+              inclusive: true
+
+  - name: mart_genre_analysis
+    description: "Her bir film türü için genel performans metriklerini içerir. 'En popüler tür hangisi?' gibi stratejik sorulara cevap verir."
+    columns:
+      - name: genre
+        tests:
+          # - unique
+          - not_null
+
+  - name: mart_user_activity
+    description: "Her kullanıcının aktivite metriklerini içeren, müşteri odaklı analiz tablosu. 'En aktif kullanıcılarımız kimler?' gibi sorulara cevap verir."
+    columns:
+      - name: user_id
+        tests:
+          - unique
+          - not_null

@@ -1,0 +1,31 @@
+# dbt_project.yml
+
+name: 'cinebrain_dbt'
+version: '1.0'
+config-version: 2
+
+# Bu, dbt'ye bağlantı bilgilerini hangi profilde arayacağını söyler.
+profile: 'cinebrain_dbt'
+
+# Modellerimizin nerede olduğunu belirtir.
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+# Modeller için varsayılan ayarlar.
+# Bu ayar, proje adınızın altına yazılmalıdır.
+models:
+  cinebrain_dbt:
+    # staging katmanındaki her şeyi varsayılan olarak 'view' yap.
+    staging:
+      +materialized: view
+    # marts katmanındaki her şeyi varsayılan olarak 'table' yap.
+    marts:
+      +materialized: table
+
+# recommendations altındaki her şeyi devre dışı bırak
+      recommendations:
+        +enabled: false

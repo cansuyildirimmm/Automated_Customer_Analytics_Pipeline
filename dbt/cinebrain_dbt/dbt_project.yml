@@ -1,0 +1,23 @@
+# dbt_project.yml (Düzeltilmiş ve Tam Hali)
+
+name: 'cinebrain_dbt'
+version: '1.0'
+config-version: 2
+
+profile: 'cinebrain_dbt'
+
+model-paths: ["models"]
+
+# Modeller için varsayılan ayarlar.
+# dbt_project.yml dosyasının içindeki models bloğu
+
+models:
+  cinebrain_dbt:
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table
+      # YENİ EKLENEN KISIM:
+      # recommendations altındaki her şeyi geçici olarak devre dışı bırak
+      recommendations:
+        +enabled: false

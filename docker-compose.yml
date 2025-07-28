@@ -1,0 +1,69 @@
+# Bu, "B Planı" (Tek Atımlık Görev) stratejisiyle tam uyumlu, en sağlam docker-compose.yml dosyasıdır.
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: cinebrain_dwh
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow -d cinebrain_dwh"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  airflow-init:
+    image: apache/airflow:2.7.1
+    container_name: airflow-init
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/cinebrain_dwh
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    volumes:
+      - ./airflow/requirements.txt:/requirements.txt
+    command: >
+      bash -c "pip install --no-cache-dir -r /requirements.txt && airflow db init && airflow users create --role Admin --username airflow --email admin@example.com --firstname Admin --lastname User --password airflow"
+
+  airflow:
+    image: apache/airflow:2.7.1
+    container_name: airflow
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./scripts:/opt/airflow/scripts
+      - ./data:/opt/airflow/data
+      - ./airflow/requirements.txt:/requirements.txt
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/cinebrain_dwh
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: false
+    command: bash -c "pip install --no-cache-dir -r /requirements.txt && airflow webserver & airflow scheduler"
+
+  # B Planı için yapılandırılmış, sadeleştirilmiş ve entrypoint'i düzeltilmiş dbt servisi
+  dbt:
+    image: ghcr.io/dbt-labs/dbt-postgres:1.6.0
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./dbt/cinebrain_dbt:/usr/app/cinebrain_dbt
+    working_dir: /usr/app
+    
+    # BU SİHİRLİ SATIR, "No such command 'dbt'" HATASINI ÇÖZER
+    entrypoint: ""
+
+volumes:
+  postgres_data:

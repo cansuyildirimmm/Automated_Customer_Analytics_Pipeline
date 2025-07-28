@@ -1,0 +1,15 @@
+# profiles.yml (Neon.tech uyumlu hali)
+
+cinebrain_dbt:
+  target: prod # Artık production (bulut) ortamındayız
+  outputs:
+    prod:
+      type: postgres
+      host: ep-withered-mouse-a2oy4uj3-pooler.eu-central-1.aws.neon.tech
+      user: neondb_owner
+      password: 'npg_6FqdhW4KVavZ' # Şifreyi tırnak içine almak iyi bir pratiktir
+      port: 5432
+      dbname: neondb
+      schema: public
+      sslmode: 'require' # Neon.tech için bu satır zorunludur!
+      threads: 4

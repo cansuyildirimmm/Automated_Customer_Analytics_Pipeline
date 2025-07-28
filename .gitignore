@@ -1,0 +1,31 @@
+# Python ve Sanal Ortamlar
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Docker ve Veritabanı Verileri
+# ASLA veritabanı verilerini veya Docker volume'lerini yükleme
+postgres_data/
+
+# Airflow Logları ve Geçici Dosyalar
+airflow/logs/
+airflow/plugins/
+airflow/*.db
+airflow/*.pid
+
+# dbt Tarafından Oluşturulan ve Gerekli Olmayan Klasörler
+dbt/cinebrain_dbt/dbt_packages/
+dbt/cinebrain_dbt/logs/
+dbt/cinebrain_dbt/target/
+
+# IDE ve İşletim Sistemi Dosyaları
+.idea/
+.vscode/
+*.DS_Store
+
+# Hassas Bilgiler (Eğer varsa)
+# .env
+# *.pem
+# secrets.yml
